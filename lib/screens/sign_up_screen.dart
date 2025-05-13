@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -26,7 +25,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final List<String> _roles = ['STUDENT', 'MENTOR'];
 
   // Replace with your actual backend URL (get the IP of the other computer)
-  final String _backendUrl = 'http://<OTHER_COMPUTER_IP>:5000/api/signup';
+  final String _backendUrl = 'https://skillsync-backend-production.up.railway.app/api/auth/register';
 
   Future<void> _signUpUser() async {
     if (!_formKey.currentState!.validate()) return;
@@ -49,7 +48,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           'password': passwordController.text,
           'role': _selectedRole,
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 20));
 
       final responseData = jsonDecode(response.body);
 
@@ -357,11 +356,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
               _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
               color: Colors.white,
             ),
-            onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+            onPressed: () => setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            }),
           )
               : null,
         ),
-        style: const TextStyle(color: Colors.white),
       ),
     );
   }

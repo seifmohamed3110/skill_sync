@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart'; // Added
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,7 +10,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
@@ -24,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSavedCredentials(); // Load credentials when screen opens
+    _loadSavedCredentials();
   }
 
   Future<void> _loadSavedCredentials() async {
@@ -50,33 +47,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    try {
-      final response = await http.post(
-        Uri.parse('https://skillsync-backend-production.up.railway.app/api/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': email,
-          'password': password,
-        }),
-      );
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 1));
 
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-
-        if (rememberMe) {
-          await _saveCredentials(email, password);
-        }
-
-        Navigator.pushNamed(context, '/student_home');
-      } else {
-        final error = json.decode(response.body);
-        _showErrorDialog(error['message'] ?? 'Login failed');
+    // Simple validation - in a real app you'd have proper validation
+    if (email.isNotEmpty && password.isNotEmpty) {
+      if (rememberMe) {
+        await _saveCredentials(email, password);
       }
-    } catch (e) {
-      _showErrorDialog('An error occurred. Please try again.');
-    } finally {
-      setState(() => _isLoading = false);
+
+      // Navigate to home screen on successful "login"
+      if (mounted) {
+        Navigator.pushNamed(context, '/student_home');
+      }
+    } else {
+      _showErrorDialog('Please enter both email and password');
     }
+
+    setState(() => _isLoading = false);
   }
 
   void _showErrorDialog(String message) {
@@ -184,17 +172,12 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 80),
                 Image.asset(
-                  'assets/logo.png',                  width: 190,
+                  'assets/logo.png',
+                  width: 190,
                   height: 100,
                   fit: BoxFit.cover,
                 ),
                 const SizedBox(height: 60),
-                _buildInputField(
-                  controller: nameController,
-                  hint: 'Name',
-                  validator: (value) => value!.isEmpty ? 'Please enter your name' : null,
-                ),
-                const SizedBox(height: 20),
                 _buildInputField(
                   controller: emailController,
                   hint: 'EMAIL',

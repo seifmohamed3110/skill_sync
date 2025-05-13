@@ -121,8 +121,8 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(21),
-                        child: Image.network(
-                          'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F6dcbedab-a108-41a8-bcdb-c4c8d3371b6e.png',
+                        child: Image.asset(
+                          'assets/contact.png',
                           width: double.infinity,
                           height: double.infinity,
                           fit: BoxFit.cover,
@@ -169,8 +169,7 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   buildCard(
-                    url:
-                    'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2Fab0dec73-5d43-4bed-b1c0-a1901be9052f.png',
+                    assetPath: 'assets/uploadresume.png',
                     label: 'UPLOAD RESUME',
                     width: 171,
                     onTap: () {
@@ -178,8 +177,7 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
                     },
                   ),
                   buildCard(
-                    url:
-                    'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0RtgVWh8wVg1fysBxIg4%2F399131e3f55f11cd67516c68e2a2a0d70e526de6Guy%20making%20a%20table%20on%20a%20paper.png?alt=media&token=b0fe9e55-67a7-42bb-b28d-73bd8e85f22c',
+                    assetPath: 'assets/take_assessment.png',
                     label: 'TAKE ASSESSMENT',
                     width: 169,
                     onTap: () async {
@@ -294,7 +292,7 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
   }
 
   Widget buildCard({
-    required String url,
+    required String assetPath,
     required String label,
     required double width,
     required VoidCallback onTap,
@@ -312,8 +310,8 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: Image.network(
-                  url,
+                child: Image.asset(
+                  assetPath,
                   width: width,
                   height: 111,
                   fit: BoxFit.cover,
