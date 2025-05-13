@@ -1,0 +1,62 @@
+name: neww
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Cupertino Icons for iOS style icons
+  cupertino_icons: ^1.0.8
+
+  # Launch URLs (e.g., open browser, email, etc.)
+  url_launcher: ^6.2.5
+
+  # Google Fonts package for better font styles
+  google_fonts: ^6.1.0
+
+  # File picker to allow users to select files (e.g., resumes)
+
+  file_picker: ^10.1.7  # Check for the latest version
+
+  image_picker: ^1.0.4
+  # Provider for state management (optional)
+  provider: ^6.1.3
+
+  # HTTP for network requests (optional)
+  http: ^1.4.0
+
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Lints for good coding practices
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Example custom fonts setup
+  # fonts:
+  #   - family: CantoraOne
+  #     fonts:
+  #       - asset: fonts/CantoraOne-Regular.ttf
+
+  # Declare asset directories here
+  # assets:
+  #   - images/
+  #   - fonts/CantoraOne-Regular.ttf
+
+  # Example platform configuration
+  # web:
+  #   enable: true

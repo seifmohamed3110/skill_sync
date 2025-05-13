@@ -1,0 +1,264 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:file_picker/file_picker.dart';
+
+class UploadResumeScreen extends StatefulWidget {
+  const UploadResumeScreen({super.key});
+
+  @override
+  State<UploadResumeScreen> createState() => _UploadResumeScreenState();
+}
+
+class _UploadResumeScreenState extends State<UploadResumeScreen> {
+  PlatformFile? _selectedFile;
+  bool _isFileUploaded = false;
+  bool _showSuccessMessage = false;
+
+  Future<void> _uploadFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'],
+      );
+
+      if (result != null) {
+        setState(() {
+          _selectedFile = result.files.first;
+          _isFileUploaded = true;
+          _showSuccessMessage = true;
+        });
+
+        // Hide the message after 3 seconds
+        Future.delayed(const Duration(seconds: 3000), () {
+          if (mounted) {
+            setState(() {
+              _showSuccessMessage = false;
+            });
+          }
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error uploading file: ${e.toString()}')),
+      );
+    }
+  }
+
+  void _checkResume() {
+    if (_selectedFile != null) {
+      Navigator.pushNamed(context, '/resume_check');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload a resume first')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        width: 375,
+        height: 812,
+        clipBehavior: Clip.hardEdge,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 0,
+                top: 0,
+                child: Container(
+                  width: 375,
+                  height: 812,
+                  clipBehavior: Clip.hardEdge,
+                  decoration: BoxDecoration(
+                    border: Border.all(),
+                    borderRadius: BorderRadius.circular(32),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFEFEFEF), Color(0xFF61A5C2)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: [0.06, 1],
+                    ),
+                  ),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Positioned(
+                        left: 83,
+                        top: 71,
+                        child: SizedBox(
+                          width: 251,
+                          height: 32,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Positioned(
+                                left: -1,
+                                top: -1,
+                                child: SizedBox(
+                                  width: 255,
+                                  height: 46,
+                                  child: Text(
+                                    'Upload Resume',
+                                    style: TextStyle(
+                                      color: Color(0xFF01497C),
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.7,
+                                      fontFamily: 'Roboto',
+                                    ),
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                      const Positioned(
+                        left: 6,
+                        top: 182,
+                        child: SizedBox(
+                          width: 268,
+                          height: 76,
+                          child: Text(
+                            'Choose Your File',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFF01497C),
+                              fontSize: 32,
+                              fontFamily: 'CantoraOne',
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 33,
+                        top: 73,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Image.network(
+                            'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F69d9f7db-1d95-4f41-b4fd-e248377529e5.png',
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 31,
+                        top: 277,
+                        child: GestureDetector(
+                          onTap: _uploadFile,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            clipBehavior: Clip.hardEdge,
+                            child: Image.network(
+                              'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2Fe13f4f9e-58ae-4b87-915b-ef2d068f1683.png',
+                              width: 170,
+                              height: 71,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 49,
+                        top: 294,
+                        child: GestureDetector(
+                          onTap: _uploadFile,
+                          child: const SizedBox(
+                            width: 135,
+                            height: 37,
+                            child: Text(
+                              'Upload here',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 21,
+                                height: 1.6,
+                                fontFamily: 'CantoraOne',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_isFileUploaded)
+                        Positioned(
+                          left: 83,
+                          top: 558,
+                          child: GestureDetector(
+                            onTap: _checkResume,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(1000),
+                              clipBehavior: Clip.hardEdge,
+                              child: Image.network(
+                                'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F17761198-9535-41b0-aa26-63323655bd5e.png',
+                                width: 209,
+                                height: 71,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (_isFileUploaded)
+                        const Positioned(
+                          left: 111,
+                          top: 575,
+                          child: SizedBox(
+                            width: 154,
+                            height: 37,
+                            child: Text(
+                              'Check Resume',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                height: 0.7,
+                                fontFamily: 'CantoraOne',
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (_showSuccessMessage && _selectedFile != null)
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              "Your file '${_selectedFile!.name}'\nhas been uploaded successfully.",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
