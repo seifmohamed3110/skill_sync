@@ -136,9 +136,8 @@ class SecondWelcomeScreen extends StatelessWidget {
             Positioned(
               left: screenWidth * 0.23,
               top: screenHeight * 0.32,
-              child: Image.network(
-                'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0RtgVWh8wVg1fysBxIg4%2F5fbeb6c0e59e0710bf956727527a49dd80030b0eAsset%209logooo%201.png?alt=media&token=876fd11d-1791-4d72-9b73-6885a79aad57',
-                width: screenWidth * 0.6,
+              child: Image.asset(
+                'assets/logo.png',                width: screenWidth * 0.6,
                 height: screenHeight * 0.15,
                 fit: BoxFit.cover,
               ),

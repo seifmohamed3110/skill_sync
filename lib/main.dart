@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'screens/splash_screen.dart';
 import 'screens/first_welcome_screen.dart';
 import 'screens/second_welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/sign_up_screen.dart';
 import 'screens/forget_password_screen.dart';
-import 'screens/student_sign_up_screen.dart';
-import 'screens/mentor_sign_up_screen.dart';
 import 'screens/home_page_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/mentor_chat_screen.dart';
@@ -32,13 +31,12 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        '/': (context) => const FirstWelcomeScreen(),
+        '/': (context) => const SplashScreen(),
+        'first': (context) => FirstWelcomeScreen(),
         '/second': (context) => const SecondWelcomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
         '/forget_password': (context) => ForgetPasswordScreen(),
-        '/student_signup': (context) => const StudentSignUpScreen(),
-        '/mentor_signup': (context) => const MentorSignUpScreen(),
         '/student_home': (context) => StudentHomePageScreen(),
         '/mentor_chat_list': (context) => MentorChatListScreen(),
         '/mentor_chat': (context) => MentorChatScreen(),

@@ -87,8 +87,8 @@ class FirstWelcomeScreen extends StatelessWidget {
             Positioned(
               left: 93,
               top: MediaQuery.of(context).size.height * 0.33,
-              child: Image.network(
-                'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0RtgVWh8wVg1fysBxIg4%2F5fbeb6c0e59e0710bf956727527a49dd80030b0eAsset%209logooo%201.png?alt=media&token=876fd11d-1791-4d72-9b73-6885a79aad57',
+              child: Image.asset(
+                'assets/logo.png',
                 width: 190,
                 height: 100,
                 fit: BoxFit.cover,

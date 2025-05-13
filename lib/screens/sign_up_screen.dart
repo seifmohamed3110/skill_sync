@@ -1,268 +1,367 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-class SignUpScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
+  _SignUpScreenState createState() => _SignUpScreenState();
+}
 
+class _SignUpScreenState extends State<SignUpScreen> {
+  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  bool _isPasswordVisible = false;
+  bool _isLoading = false;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  String? _selectedRole;
+  bool _showRoles = false;
+
+  final List<String> _roles = ['STUDENT', 'MENTOR'];
+
+  // Replace with your actual backend URL (get the IP of the other computer)
+  final String _backendUrl = 'http://<OTHER_COMPUTER_IP>:5000/api/signup';
+
+  Future<void> _signUpUser() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedRole == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a role')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse(_backendUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'fullName': fullNameController.text,
+          'email': emailController.text,
+          'password': passwordController.text,
+          'role': _selectedRole,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        Navigator.pushReplacementNamed(
+          context,
+          _selectedRole == 'STUDENT' ? '/student_home' : '/mentor_home',
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration successful!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(responseData['message'] ?? 'Registration failed')),
+        );
+      }
+    } on http.ClientException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Network error: ${e.message}')),
+      );
+    } on TimeoutException {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Connection timeout')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        width: screenWidth,
-        height: screenHeight,
-        clipBehavior: Clip.hardEdge,
-        decoration: BoxDecoration(
-          border: Border.all(),
-          borderRadius: BorderRadius.circular(0),
-          gradient: const LinearGradient(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFEFEFEF), Color(0xFF61A5C2)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFEFEFEF), Color(0xFF61A5C2)],
             stops: [0.06, 1],
           ),
         ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // ======= STUDENT CONTAINER (clickable) =======
-            Positioned(
-              left: 0,
-              top: screenHeight * 0.26,
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/student_signup');
-                },
-                child: Stack(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 80),
+                Image.asset(
+                  'assets/logo.png',
+                  width: 190,
+                  height: 100,
+                  fit: BoxFit.cover,
+                ),
+                const SizedBox(height: 60),
+
+                // Full Name Field
+                _buildInputField(
+                  controller: fullNameController,
+                  hint: 'Full Name',
+                  validator: (value) => value!.isEmpty ? 'Please enter your full name' : null,
+                ),
+                const SizedBox(height: 20),
+
+                // Email Field
+                _buildInputField(
+                  controller: emailController,
+                  hint: 'Email',
+                  validator: (value) {
+                    if (value!.isEmpty) return 'Please enter your email';
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                // Password Field
+                _buildInputField(
+                  controller: passwordController,
+                  hint: 'Password',
+                  isPassword: true,
+                  validator: (value) {
+                    if (value!.isEmpty) return 'Please enter a password';
+                    if (value.length < 6) return 'Password must be at least 6 characters';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                // Role Selection
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: screenWidth * 0.92,
-                      height: screenHeight * 0.22,
-                      clipBehavior: Clip.hardEdge,
-                      decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.horizontal(
-                          right: Radius.circular(17),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x2D000000),
-                            spreadRadius: 0,
-                            offset: Offset(10.5, -12.2),
-                            blurRadius: 35,
-                          )
-                        ],
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF01497C),
-                            Color(0xFF61A5C2),
-                            Color(0xFFEFEFEF)
+                    GestureDetector(
+                      onTap: () => setState(() => _showRoles = !_showRoles),
+                      child: Container(
+                        width: double.infinity,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF01497C),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x19000000),
+                              blurRadius: 5,
+                              offset: Offset(0, 2),
+                            ),
+                            BoxShadow(
+                              color: Color(0x16000000),
+                              blurRadius: 10,
+                              offset: Offset(0, 10),
+                            ),
                           ],
-                          stops: [0, 0.59, 1],
                         ),
-                      ),
-                    ),
-                    Positioned(
-                      left: screenWidth * 0.04,
-                      top: screenHeight * 0.015,
-                      child: Image.network(
-                        'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2Fe9a4c9e4-f7a8-4e38-a1fd-509d8713a1ad.png',
-                        width: screenWidth * 0.81,
-                        height: screenHeight * 0.22,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    Positioned(
-                      left: screenWidth * 0.2,
-                      top: screenHeight * 0.05,
-                      child: SizedBox(
-                        width: screenWidth * 0.6,
-                        height: screenHeight * 0.05,
-                        child: const Text(
-                          'STUDENT',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 1,
-                            fontFamily: 'Roboto',
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _selectedRole ?? 'SELECT ROLE',
+                                style: GoogleFonts.getFont(
+                                  'Cantora One',
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                ),
+                              ),
+                              Icon(
+                                _showRoles ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                                color: Colors.white,
+                                size: 30,
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-
-            // ======= FRESH GRADUATED CONTAINER (clickable) =======
-            Positioned(
-              left: 0,
-              top: screenHeight * 0.47,
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/student_signup');
-                },
-                child: Stack(
-                  children: [
-                    Container(
-                      width: screenWidth * 0.86,
-                      height: screenHeight * 0.22,
-                      clipBehavior: Clip.hardEdge,
-                      decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.horizontal(
-                          right: Radius.circular(17),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x2D000000),
-                            spreadRadius: 0,
-                            offset: Offset(10.5, -12.2),
-                            blurRadius: 35,
-                          )
-                        ],
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF01497C),
-                            Color(0xFF61A5C2),
-                            Color(0xFFEFEFEF)
-                          ],
-                          stops: [0, 0.59, 1],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: screenWidth * 0.02,
-                      top: screenHeight * 0.01,
-                      child: Image.network(
-                        'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2Fa3da86f2-00a0-4ca2-bc33-f2e373fe4bb0.png',
-                        width: screenWidth * 0.81,
-                        height: screenHeight * 0.22,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    Positioned(
-                      left: screenWidth * 0.1,
-                      top: screenHeight * 0.05,
-                      child: SizedBox(
-                        width: screenWidth * 0.8,
-                        height: screenHeight * 0.05,
-                        child: const Text(
-                          'FRESH GRADUATED',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.8,
-                            fontFamily: 'Roboto',
+                    if (_showRoles)
+                      Column(
+                        children: _roles.map((role) => GestureDetector(
+                          onTap: () => setState(() {
+                            _selectedRole = role;
+                            _showRoles = false;
+                          }),
+                          child: Container(
+                            width: double.infinity,
+                            height: 50,
+                            margin: const EdgeInsets.only(top: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x19000000),
+                                  blurRadius: 5,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  role,
+                                  style: GoogleFonts.getFont(
+                                    'Cantora One',
+                                    color: const Color(0xFF01497C),
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                        )).toList(),
                       ),
-                    ),
                   ],
                 ),
-              ),
-            ),
+                const SizedBox(height: 20),
 
-            // ======= MENTOR (now clickable) =======
-            Positioned(
-              left: 0,
-              top: screenHeight * 0.69,
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/mentor_signup'); // Added navigation
-                },
-                child: Stack(
-                  children: [
-                    Container(
-                      width: screenWidth * 0.78,
-                      height: screenHeight * 0.22,
-                      clipBehavior: Clip.hardEdge,
-                      decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.horizontal(
-                          right: Radius.circular(17),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x2D000000),
-                            spreadRadius: 0,
-                            offset: Offset(10.5, -12.2),
-                            blurRadius: 35,
-                          )
-                        ],
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF01497C),
-                            Color(0xFF61A5C2),
-                            Color(0xFFEFEFEF)
-                          ],
-                          stops: [0, 0.59, 1],
-                        ),
+                // Sign Up Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 58,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF01497C),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    Positioned(
-                      left: screenWidth * 0.03,
-                      top: screenHeight * 0.01,
-                      child: Image.network(
-                        'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F7132e859-8b03-4a57-981a-8d1542bb4e8d.png',
-                        width: screenWidth * 0.68,
-                        height: screenHeight * 0.22,
-                        fit: BoxFit.contain,
+                    onPressed: _isLoading ? null : _signUpUser,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                      'SIGN UP',
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontFamily: 'CantoraOne',
+                        color: Color(0xFFEFEFEF),
                       ),
                     ),
-                    Positioned(
-                      left: screenWidth * 0.2,
-                      top: screenHeight * 0.05,
-                      child: SizedBox(
-                        width: screenWidth * 0.6,
-                        height: screenHeight * 0.05,
-                        child: const Text(
-                          'MENTOR',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 1,
-                            fontFamily: 'Roboto',
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // ======= HEADER =======
-            const Positioned(
-              left: 90,
-              top: 98,
-              child: SizedBox(
-                width: 198,
-                height: 83,
-                child: Text(
-                  'SIGNUP AS',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF01497C),
-                    fontSize: 40,
-                    height: 1,
-                    fontFamily: 'CantoraOne',
                   ),
                 ),
-              ),
+                const SizedBox(height: 20),
+
+                // OR Divider
+                const Row(
+                  children: [
+                    Expanded(child: Divider(color: Color(0xFF01497C))),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        'OR',
+                        style: TextStyle(
+                          fontSize: 25,
+                          color: Color(0xFF01497C),
+                          fontFamily: 'CantoraOne',
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Color(0xFF01497C))),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Login Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 58,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF01497C), width: 3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _isLoading ? null : () => Navigator.pushNamed(context, '/login'),
+                    child: const Text(
+                      'LOGIN',
+                      style: TextStyle(
+                        fontSize: 25,
+                        color: Color(0xFF01497C),
+                        fontFamily: 'CantoraOne',
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
             ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String hint,
+    bool isPassword = false,
+    String? Function(String?)? validator,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0x7F61A5C2),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x19000000),
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
+          BoxShadow(
+            color: Color(0x16000000),
+            blurRadius: 10,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        obscureText: isPassword ? !_isPasswordVisible : false,
+        validator: validator,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.getFont(
+            'Cantora One',
+            fontSize: 20,
+            color: const Color(0xFFEFEFEF),
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          suffixIcon: isPassword
+              ? IconButton(
+            icon: Icon(
+              _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+              color: Colors.white,
+            ),
+            onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+          )
+              : null,
+        ),
+        style: const TextStyle(color: Colors.white),
       ),
     );
   }

@@ -129,10 +129,9 @@ class AssessmentIntroScreen extends StatelessWidget {
                   );
                 },
                 child: Transform.rotate(
-                  angle: pi,
-                  child: Image.network(
-                    'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F8e75caed-dff7-4756-8d57-3beffc69b7fa.png',
-                    width: 32,
+                  angle: 0,
+                  child: Image.asset(
+                    'assets/back_arrow.png',                 width: 32,
                     height: 32,
                   ),
                 ),
@@ -225,8 +224,8 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       behavior: HitTestBehavior.opaque,
-                      child: Image.network(
-                        'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2Fcf459090-19f7-4c5e-bbc6-9891331c00aa.png',
+                      child: Image.asset(
+                        'assets/back_arrow.png',
                         width: 28,
                         height: 28,
                       ),
@@ -454,8 +453,8 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
                 onTap: () {
                   Navigator.pop(context);
                 },
-                child: Image.network(
-                  'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F7a247b9b-ff9a-47cc-b108-dba2a39fa02f.png',
+                child: Image.asset(
+                  'assets/back_arrow.png',
                   width: 28,
                   height: 28,
                   fit: BoxFit.contain,

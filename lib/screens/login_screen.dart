@@ -183,9 +183,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 80),
-                Image.network(
-                  'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0RtgVWh8wVg1fysBxIg4%2F5fbeb6c0e59e0710bf956727527a49dd80030b0eAsset%209logooo%201.png?alt=media&token=876fd11d-1791-4d72-9b73-6885a79aad57',
-                  width: 190,
+                Image.asset(
+                  'assets/logo.png',                  width: 190,
                   height: 100,
                   fit: BoxFit.cover,
                 ),

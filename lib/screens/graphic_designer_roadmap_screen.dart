@@ -104,9 +104,8 @@ class _GraphicDesignerRoadmapScreenState extends State<GraphicDesignerRoadmapScr
                   Positioned(
                     left: 33,
                     top: 73,
-                    child: Image.network(
-                      'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F5078ba37-a7b2-42f5-b150-45ae2f9b3511.png',
-                      width: 28,
+                    child: Image.asset(
+                      'assets/back_arrow.png',                      width: 28,
                       height: 28,
                       fit: BoxFit.contain,
                     ),

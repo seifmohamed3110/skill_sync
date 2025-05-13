@@ -142,8 +142,8 @@ class _UploadResumeScreenState extends State<UploadResumeScreen> {
                         top: 73,
                         child: GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: Image.network(
-                            'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F69d9f7db-1d95-4f41-b4fd-e248377529e5.png',
+                          child: Image.asset(
+                            'assets/back_arrow.png',
                             width: 28,
                             height: 28,
                             fit: BoxFit.contain,
