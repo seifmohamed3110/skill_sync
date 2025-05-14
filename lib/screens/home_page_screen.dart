@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentHomePageScreen extends StatefulWidget {
   const StudentHomePageScreen({super.key});
@@ -11,6 +13,27 @@ class StudentHomePageScreen extends StatefulWidget {
 
 class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
   bool assessmentDone = false;
+  String userName = 'Rohan';
+  File? profileImage;
+  final String _defaultImageUrl =
+      'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0RtgVWh8wVg1fysBxIg4%2Fcc50743bb7f21efb92ab09d47d56bdb6f5735a9duser-image.png?alt=media&token=558c6ac5-1b80-4dd6-bb4a-3455eadf5304';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userName = prefs.getString('profile_name') ?? 'Rohan';
+      final imagePath = prefs.getString('profile_image_path');
+      if (imagePath != null && File(imagePath).existsSync()) {
+        profileImage = File(imagePath);
+      }
+    });
+  }
 
   void updateAssessmentStatus(bool done) {
     setState(() {
@@ -41,9 +64,9 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Hi Rohan,',
-                    style: TextStyle(
+                  Text(
+                    'Hi $userName,',
+                    style: const TextStyle(
                       color: Color(0xFF01497C),
                       fontSize: 30,
                       fontWeight: FontWeight.w500,
@@ -51,7 +74,17 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/profile'),
+                    onTap: () async {
+                      final result = await Navigator.pushNamed(context, '/profile');
+                      if (result != null && result is Map) {
+                        setState(() {
+                          userName = result['name'] ?? userName;
+                          if (result['imagePath'] != null) {
+                            profileImage = File(result['imagePath']);
+                          }
+                        });
+                      }
+                    },
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
@@ -59,9 +92,10 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            image: const DecorationImage(
-                              image: NetworkImage(
-                                  'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0RtgVWh8wVg1fysBxIg4%2Fcc50743bb7f21efb92ab09d47d56bdb6f5735a9duser-image.png?alt=media&token=558c6ac5-1b80-4dd6-bb4a-3455eadf5304'),
+                            image: DecorationImage(
+                              image: profileImage != null
+                                  ? FileImage(profileImage!) as ImageProvider
+                                  : NetworkImage(_defaultImageUrl),
                               fit: BoxFit.cover,
                             ),
                             border: Border.all(width: 1.3, color: Colors.white),
@@ -196,7 +230,7 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
                   onTap: () async {
                     final result = await Navigator.pushNamed(
                       context,
-                      '/frontend_roaddmap',
+                      '/frontend_roadmap',
                       arguments: 'front-end developer',
                     );
                     if (result == true) {
@@ -245,45 +279,49 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: ClipRRect(
-        borderRadius: BorderRadius.circular(50),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            height: 74,
-            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(50),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                )
-              ],
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(50),
+            border: Border.all(
+              color: Colors.black,
+              width: 1.5,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                GestureDetector(
-                  onTap: () {}, // Already on Home
-                  child: buildBottomIcon(Icons.home, 'Home', isActive: true),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(50),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                height: 74,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(50),
                 ),
-                GestureDetector(
-                  onTap: () async {
-                    final result = await Navigator.pushNamed(
-                      context,
-                      '/frontend_roadmap',
-                      arguments: 'front-end developer',
-                    );
-                    if (result == true) {
-                      updateAssessmentStatus(true);
-                    }
-                  },
-                  child: buildBottomIcon(Icons.map, 'Roadmap', isActive: false),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    GestureDetector(
+                      onTap: () {},
+                      child: buildBottomIcon(Icons.home, 'Home', isActive: true),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        final result = await Navigator.pushNamed(
+                          context,
+                          '/frontend_roadmap',
+                          arguments: 'front-end developer',
+                        );
+                        if (result == true) {
+                          updateAssessmentStatus(true);
+                        }
+                      },
+                      child: buildBottomIcon(Icons.map, 'Roadmap', isActive: false),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

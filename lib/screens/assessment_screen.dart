@@ -198,6 +198,23 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
     });
   }
 
+  bool get allQuestionsAnswered {
+    return answers.values.every((answer) => answer != null);
+  }
+
+  void _submitAssessment() {
+    if (!allQuestionsAnswered) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please answer all questions before submitting'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    Navigator.pushNamed(context, '/assessment/results');
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -301,9 +318,7 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/assessment/results');
-                  },
+                  onTap: _submitAssessment,
                   child: Container(
                     width: double.infinity,
                     height: 58,

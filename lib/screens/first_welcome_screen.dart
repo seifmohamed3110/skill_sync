@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:math';
 
 class FirstWelcomeScreen extends StatelessWidget {
   const FirstWelcomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: Container(
-        width: MediaQuery.of(context).size.width,  // Dynamically adjust to screen width
-        height: MediaQuery.of(context).size.height,  // Dynamically adjust to screen height
+        width: screenWidth,
+        height: screenHeight,
         clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           border: Border.all(),
@@ -27,7 +29,7 @@ class FirstWelcomeScreen extends StatelessWidget {
           children: [
             Positioned(
               left: 91,
-              top: MediaQuery.of(context).size.height * 0.46,
+              top: screenHeight * 0.46,
               child: SizedBox(
                 width: 193,
                 height: 34,
@@ -44,8 +46,8 @@ class FirstWelcomeScreen extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: MediaQuery.of(context).size.width * 0.78,
-              top: MediaQuery.of(context).size.height * 0.89,
+              left: screenWidth * 0.78,
+              top: screenHeight * 0.89,
               child: GestureDetector(
                 onTap: () {
                   Navigator.pushNamed(context, '/second');
@@ -72,13 +74,13 @@ class FirstWelcomeScreen extends StatelessWidget {
                       Positioned(
                         left: 17,
                         top: 16,
-                    child: Image.network(
-                      'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2Fbdedfe0a-a478-4fc0-abaf-c1ed88ce4c58.png',
+                        child: Image.network(
+                          'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2Fbdedfe0a-a478-4fc0-abaf-c1ed88ce4c58.png',
                           width: 29,
                           height: 24,
                           fit: BoxFit.contain,
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -86,9 +88,9 @@ class FirstWelcomeScreen extends StatelessWidget {
             ),
             Positioned(
               left: 93,
-              top: MediaQuery.of(context).size.height * 0.33,
+              top: screenHeight * 0.33,
               child: Image.asset(
-                'assets/logo.png',
+                'assets/logo.png', // Ensure correct path for local asset
                 width: 190,
                 height: 100,
                 fit: BoxFit.cover,
