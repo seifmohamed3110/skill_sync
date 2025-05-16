@@ -24,8 +24,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   final List<String> _roles = ['STUDENT', 'MENTOR'];
 
-  // Replace with your actual backend URL (get the IP of the other computer)
-  final String _backendUrl = 'https://skillsync-backend-production.up.railway.app/api/auth/register';
+  // Updated with your Railway backend URL
+  final String _backendUrl = 'https://skillsync-production-189b.up.railway.app';
 
   Future<void> _signUpUser() async {
     if (!_formKey.currentState!.validate()) return;

@@ -6,7 +6,7 @@ import 'screens/second_welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/sign_up_screen.dart';
 import 'screens/forget_password_screen.dart';
-import 'screens/home_page_screen.dart';
+import 'screens/student_homepage_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/mentor_chat_screen.dart';
 import 'screens/upload_resume_screen.dart'; // NEW IMPORT
@@ -17,6 +17,7 @@ import 'screens/career_roadmap-screen.dart';
 import 'screens/get_premium_screen.dart';
 import 'screens/mentor_chat_list_screen.dart';
 import 'screens/resume_check_screen.dart';
+import 'screens/mentor_homepage_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -35,7 +36,7 @@ class MyApp extends StatelessWidget {
         'first': (context) => FirstWelcomeScreen(),
         '/second': (context) => const SecondWelcomeScreen(),
         '/login': (context) => const LoginScreen(),
-        '/signup': (context) => const SignUpScreen(),
+        '/signup': (context) =>  SignUpScreen(),
         '/forget_password': (context) => ForgetPasswordScreen(),
         '/student_home': (context) => StudentHomePageScreen(),
         '/mentor_chat_list': (context) => MentorChatListScreen(),
@@ -49,6 +50,7 @@ class MyApp extends StatelessWidget {
         '/frontend_roadmap': (context) => FrontendRoadmapScreen(),
         '/grahic_designer_roadmap': (context) => GraphicDesignerRoadmapScreen(),
         '/get_premium' : (context) => PremiumFeaturesScreen(),
+        '/mentor_home' :(context) => MentortHomePageScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/roadmap') {
