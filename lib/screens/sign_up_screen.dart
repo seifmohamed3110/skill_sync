@@ -177,7 +177,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                _selectedRole ?? 'SELECT ROLE',
+                                _selectedRole ?? 'SELECT ROLEeeeeeeeee',
                                 style: GoogleFonts.getFont(
                                   'Cantora One',
                                   color: Colors.white,
