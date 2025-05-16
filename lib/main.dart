@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
         'first': (context) => FirstWelcomeScreen(),
         '/second': (context) => const SecondWelcomeScreen(),
         '/login': (context) => const LoginScreen(),
-        '/signup': (context) =>  SignUpScreen(),
+        '/signup': (context) => const SignUpScreen(),
         '/forget_password': (context) => ForgetPasswordScreen(),
         '/student_home': (context) => StudentHomePageScreen(),
         '/mentor_chat_list': (context) => MentorChatListScreen(),

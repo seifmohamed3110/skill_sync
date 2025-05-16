@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -47,21 +49,42 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Simple validation - in a real app you'd have proper validation
-    if (email.isNotEmpty && password.isNotEmpty) {
-      if (rememberMe) {
-        await _saveCredentials(email, password);
-      }
-
-      // Navigate to home screen on successful "login"
-      if (mounted) {
-        Navigator.pushNamed(context, '/student_home');
-      }
-    } else {
+    if (email.isEmpty || password.isEmpty) {
       _showErrorDialog('Please enter both email and password');
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://skillsync-production-189b.up.railway.app/api/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && responseData['token'] != null) {
+        // Save credentials if rememberMe is enabled
+        if (rememberMe) {
+          await _saveCredentials(email, password);
+        }
+
+        // Save token if needed
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', responseData['token']);
+
+        if (mounted) {
+          Navigator.pushNamed(context, '/student_home');
+        }
+      } else {
+        _showErrorDialog(responseData['message'] ?? 'Login failed');
+      }
+    } catch (error) {
+      _showErrorDialog('Something went wrong. Please try again later.');
     }
 
     setState(() => _isLoading = false);

@@ -185,7 +185,7 @@ class _MentortHomePageScreenState extends State<MentortHomePageScreen> {
                         left: 24,
                         bottom: 20,
                         child: Text(
-                          'CONTACT MENTOR',
+                          'CONTACT STUDENT',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 28,
