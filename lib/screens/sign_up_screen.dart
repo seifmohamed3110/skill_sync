@@ -1,8 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -23,9 +23,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _showRoles = false;
 
   final List<String> _roles = ['STUDENT', 'MENTOR'];
-
-  // Updated with your Railway backend URL
-  final String _backendUrl = 'https://skillsync-production-189b.up.railway.app';
+  final String _signUpUrl = 'https://skillsync-production-189b.up.railway.app/api/auth/register';
 
   Future<void> _signUpUser() async {
     if (!_formKey.currentState!.validate()) return;
@@ -39,20 +37,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final body = jsonEncode({
+        'name': fullNameController.text,
+        'email': emailController.text,
+        'password': passwordController.text,
+        'role': _selectedRole?.toLowerCase(),
+      });
+
+      debugPrint('Sending signup request to: $_signUpUrl');
+      debugPrint('Request body: $body');
+
       final response = await http.post(
-        Uri.parse(_backendUrl),
+        Uri.parse('https://skillsync-production-189b.up.railway.app/api/auth/register'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'fullName': fullNameController.text,
-          'email': emailController.text,
-          'password': passwordController.text,
-          'role': _selectedRole,
-        }),
+        body: body,
       ).timeout(const Duration(seconds: 20));
 
-      final responseData = jsonDecode(response.body);
+      // Added debug prints
+      print("Status code: ${response.statusCode}");
+      print("Response body: ${response.body}");
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 201) {
+        // Success
         Navigator.pushReplacementNamed(
           context,
           _selectedRole == 'STUDENT' ? '/student_home' : '/mentor_home',
@@ -61,24 +69,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
           const SnackBar(content: Text('Registration successful!')),
         );
       } else {
+        // Handle different error cases
+        final errorMessage = _getErrorMessage(response);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(responseData['message'] ?? 'Registration failed')),
+          SnackBar(content: Text(errorMessage)),
         );
       }
+    } on TimeoutException {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Request timed out. Please try again.')),
+      );
     } on http.ClientException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Network error: ${e.message}')),
       );
-    } on TimeoutException {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connection timeout')),
-      );
     } catch (e) {
+      debugPrint('Error during signup: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(content: Text('An error occurred: ${e.toString()}')),
       );
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  String _getErrorMessage(http.Response response) {
+    try {
+      final responseData = jsonDecode(response.body);
+      return responseData['message'] ??
+          responseData['error'] ??
+          'Registration failed (Status ${response.statusCode})';
+    } catch (e) {
+      return 'Registration failed (Status ${response.statusCode})';
     }
   }
 
@@ -177,7 +199,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                _selectedRole ?? 'SELECT ROLEeeeeeeeee',
+                                _selectedRole ?? 'SELECT ROLE',
                                 style: GoogleFonts.getFont(
                                   'Cantora One',
                                   color: Colors.white,
