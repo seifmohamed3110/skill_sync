@@ -23,7 +23,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _showRoles = false;
 
   final List<String> _roles = ['STUDENT', 'MENTOR'];
-  final String _signUpUrl = 'https://skillsync-production-189b.up.railway.app/api/auth/register';
+  final String _signUpUrl = 'https://skillsync-backend-production.up.railway.app/api/auth/register';
 
   Future<void> _signUpUser() async {
     if (!_formKey.currentState!.validate()) return;
@@ -48,7 +48,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       debugPrint('Request body: $body');
 
       final response = await http.post(
-        Uri.parse('https://skillsync-production-189b.up.railway.app/api/auth/register'),
+        Uri.parse('https://skillsync-backend-production.up.railway.app/api/auth/register'),
         headers: {'Content-Type': 'application/json'},
         body: body,
       ).timeout(const Duration(seconds: 20));

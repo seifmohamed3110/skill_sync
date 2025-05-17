@@ -15,7 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  bool rememberMe = true;
+  bool rememberMe = false;
   bool _isPasswordVisible = false;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
@@ -57,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://skillsync-production-189b.up.railway.app/api/auth/login'),
+        Uri.parse('https://skillsync-backend-production.up.railway.app/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -67,26 +67,46 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final responseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && responseData['token'] != null) {
-        // Save credentials if rememberMe is enabled
+      if (response.statusCode == 200) {
+        // Add null checks for critical fields
+        final token = responseData['token']?.toString();
+        final user = responseData['user'] as Map<String, dynamic>?;
+        final role = user?['role']?.toString() ?? 'student'; // Default to 'student' if null
+
+        if (token == null) {
+          _showErrorDialog('Login failed: No token received');
+          setState(() => _isLoading = false);
+          return;
+        }
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        await prefs.setString('role', role);
+
+        print('=== DEBUG: SharedPreferences Values ===');
+        print('Token saved: ${prefs.getString('token')}');
+        print('Role saved: ${prefs.getString('role')}');
+        print('======================================');
+
         if (rememberMe) {
           await _saveCredentials(email, password);
+        }else {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('saved_email');
+          await prefs.remove('saved_password');
         }
 
-        // Save token
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', responseData['token']);
-
-          if (responseData['user']['role'] == 'mentor') {
-            Navigator.pushReplacementNamed(context, '/mentor_home');
-          } else {
-            Navigator.pushReplacementNamed(context, '/student_home');
-          }
+        if (responseData['user']['role'] == 'mentor') {
+          Navigator.pushReplacementNamed(context, '/mentor_home');
+        } else {
+          Navigator.pushReplacementNamed(context, '/student_home');
+        }
       } else {
         _showErrorDialog(responseData['message'] ?? 'Login failed');
       }
     } catch (error) {
-      _showErrorDialog('Something went wrong. Please try again later.');
+      print('Login error details: $error');
+      _showErrorDialog('Login failed: ${error.toString()}'); // Show actual error
+      setState(() => _isLoading = false);
     }
 
     setState(() => _isLoading = false);
@@ -263,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed:_isLoading ? null : () {
                     if (_formKey.currentState!.validate()) {
                       _login();
                     }
