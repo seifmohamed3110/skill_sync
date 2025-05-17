@@ -77,13 +77,11 @@ class _LoginScreenState extends State<LoginScreen> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', responseData['token']);
 
-        if (mounted) {
           if (responseData['user']['role'] == 'mentor') {
             Navigator.pushReplacementNamed(context, '/mentor_home');
           } else {
             Navigator.pushReplacementNamed(context, '/student_home');
           }
-        }
       } else {
         _showErrorDialog(responseData['message'] ?? 'Login failed');
       }

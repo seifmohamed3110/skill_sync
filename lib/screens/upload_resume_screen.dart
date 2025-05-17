@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'dart:convert';
 
 class UploadResumeScreen extends StatefulWidget {
   const UploadResumeScreen({super.key});
@@ -21,21 +24,51 @@ class _UploadResumeScreenState extends State<UploadResumeScreen> {
         allowedExtensions: ['pdf', 'doc', 'docx'],
       );
 
-      if (result != null) {
+      if (result != null && result.files.single.path != null) {
         setState(() {
           _selectedFile = result.files.first;
-          _isFileUploaded = true;
-          _showSuccessMessage = true;
         });
 
-        // Hide the message after 3 seconds
-        Future.delayed(const Duration(seconds: 3000), () {
-          if (mounted) {
-            setState(() {
-              _showSuccessMessage = false;
-            });
-          }
-        });
+        // Backend API call
+        final url = Uri.parse(
+          'https://skillsync-backend-production.up.railway.app/api/resume/upload',
+        );
+
+        var request = http.MultipartRequest('POST', url);
+
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'resume',
+            _selectedFile!.path!,
+            filename: _selectedFile!.name,
+          ),
+        );
+
+        // Optional: Add token or studentId if needed by backend
+        // request.headers['Authorization'] = 'Bearer YOUR_JWT_TOKEN';
+        // request.fields['studentId'] = 'USER_ID';
+
+        final response = await request.send();
+
+        if (response.statusCode == 200) {
+          setState(() {
+            _isFileUploaded = true;
+            _showSuccessMessage = true;
+          });
+
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              setState(() {
+                _showSuccessMessage = false;
+              });
+            }
+          });
+        } else {
+          final respStr = await response.stream.bytesToString();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Upload failed: $respStr')),
+          );
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
