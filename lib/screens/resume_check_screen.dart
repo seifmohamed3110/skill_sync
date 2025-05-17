@@ -13,27 +13,46 @@ class ResumeCheckScreen extends StatefulWidget {
 class _ResumeCheckScreenState extends State<ResumeCheckScreen> {
   Map<String, dynamic>? analysisData;
   bool isLoading = true;
-  String error = '';
+  String? error;
+  String? token;
+
+  final String backendUrl =
+      'https://skillsync-backend-production.up.railway.app/api/resume/analysis';
 
   @override
   void initState() {
     super.initState();
-    fetchResumeAnalysis();
+    _loadTokenAndFetchAnalysis();
   }
 
-  Future<void> fetchResumeAnalysis() async {
+  Future<void> _loadTokenAndFetchAnalysis() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
+      final storedToken = prefs.getString('token');
 
-      if (token == null) {
+      if (storedToken == null) {
         setState(() {
-          error = 'No authentication token found. Please log in.';
+          error = 'No authentication token found';
           isLoading = false;
         });
         return;
       }
 
+      setState(() {
+        token = storedToken;
+      });
+
+      await _fetchAnalysis();
+    } catch (e) {
+      setState(() {
+        error = 'Failed to load token: ${e.toString()}';
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchAnalysis() async {
+    try {
       final response = await http.get(
         Uri.parse('https://skillsync-backend-production.up.railway.app/api/resume/analysis'),
         headers: {
@@ -43,65 +62,71 @@ class _ResumeCheckScreenState extends State<ResumeCheckScreen> {
 
       if (response.statusCode == 200) {
         setState(() {
-          analysisData = jsonDecode(response.body)['extracted'];
+          analysisData = jsonDecode(response.body);
           isLoading = false;
         });
       } else {
         setState(() {
-          error = 'Failed to load analysis: ${response.body}';
+          error = jsonDecode(response.body)['message'];
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        error = 'Error: ${e.toString()}';
+        error = 'Failed to load analysis: ${e.toString()}';
         isLoading = false;
       });
     }
   }
 
-  Widget buildSection(String title, List<String> items) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue)),
-          ...items.map((item) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: Text("• $item", style: const TextStyle(fontSize: 16, color: Colors.black)),
-          )),
-        ],
-      ),
+  Widget _buildSection(String title, List<dynamic> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 20),
+        Text(title,
+            style: const TextStyle(
+                fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF01497C))),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 10,
+          children: items.map((item) {
+            return Chip(
+              label: Text(item),
+              backgroundColor: const Color(0xFF61A5C2),
+              labelStyle: const TextStyle(color: Colors.white),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Resume Feedback")),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : error.isNotEmpty
-          ? Center(child: Text(error))
-          : SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (analysisData != null)
-              ...[
-                if (analysisData!['skills'] != null)
-                  buildSection("Skills", List<String>.from(analysisData!['skills'])),
-                if (analysisData!['jobTitles'] != null)
-                  buildSection("Job Titles", List<String>.from(analysisData!['jobTitles'])),
-                if (analysisData!['organizations'] != null)
-                  buildSection("Organizations", List<String>.from(analysisData!['organizations'])),
-                if (analysisData!['suggestions'] != null)
-                  buildSection("Suggestions", List<String>.from(analysisData!['suggestions'])),
-              ]
-          ],
+      appBar: AppBar(
+        title: const Text('Resume Analysis'),
+        backgroundColor: const Color(0xFF01497C),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : error != null
+            ? Center(child: Text(error!))
+            : SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSection('Skills', analysisData?['skills'] ?? []),
+              _buildSection('Organizations', analysisData?['organizations'] ?? []),
+              _buildSection('Job Titles', analysisData?['jobTitles'] ?? []),
+              _buildSection('Suggestions', analysisData?['suggestions'] ?? []),
+            ],
+          ),
         ),
       ),
     );
