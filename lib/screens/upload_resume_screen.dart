@@ -103,7 +103,7 @@ class _UploadResumeScreenState extends State<UploadResumeScreen> {
 
   void _checkResume() {
     if (_selectedFile != null) {
-      Navigator.pushNamed(context, '/resume_check');
+      Navigator.pushNamed(context,  '/resume_check');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please upload a resume first')),
