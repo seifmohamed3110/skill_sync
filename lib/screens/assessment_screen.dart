@@ -1,7 +1,8 @@
-// assessment_screen.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:math';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AssessmentScreen extends StatelessWidget {
   const AssessmentScreen({super.key});
@@ -31,16 +32,6 @@ class AssessmentIntroScreen extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            Positioned(
-              left: 353,
-              top: 28,
-              child: Image.network(
-                'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F121bf069-9911-4be6-a227-1b6c7628b472.png',
-                width: 1,
-                height: 4,
-                fit: BoxFit.contain,
-              ),
-            ),
             const Positioned(
               left: 82,
               top: 70,
@@ -128,12 +119,10 @@ class AssessmentIntroScreen extends StatelessWidget {
                         (Route<dynamic> route) => false,
                   );
                 },
-                child: Transform.rotate(
-                  angle: 0,
-                  child: Image.asset(
-                    'assets/back_arrow.png',                 width: 32,
-                    height: 32,
-                  ),
+                child: Image.asset(
+                  'assets/back_arrow.png',
+                  width: 32,
+                  height: 32,
                 ),
               ),
             )
@@ -152,47 +141,134 @@ class AssessmentQuestionsScreen extends StatefulWidget {
 }
 
 class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
-  final Map<String, String?> answers = {
-    'interest': null,
-    'experience': null,
-    'commitment': null,
-    'work_preference': null,
-  };
+  final List<Map<String, dynamic>> questions = [
+    {
+      'id': 'q1',
+      'question': 'Which activity do you enjoy the most?',
+      'category': 'interests',
+      'options': [
+        {'text': 'Designing user-friendly interfaces', 'score': 1, 'category': 'uiux'},
+        {'text': 'Solving complex algorithmic problems', 'score': 1, 'category': 'programming'},
+        {'text': 'Analyzing and visualizing data trends', 'score': 1, 'category': 'data'},
+        {'text': 'Developing mobile applications', 'score': 1, 'category': 'mobile'},
+        {'text': 'Building scalable APIs and systems', 'score': 1, 'category': 'backend'},
+      ],
+    },
+    {
+      'id': 'q2',
+      'question': 'Which tool or language are you most comfortable with?',
+      'category': 'skills',
+      'options': [
+        {'text': 'HTML/CSS', 'score': 1, 'category': 'frontend'},
+        {'text': 'Python', 'score': 1, 'category': 'data'},
+        {'text': 'SQL', 'score': 1, 'category': 'data'},
+        {'text': 'Figma', 'score': 1, 'category': 'uiux'},
+        {'text': 'Dart/Flutter', 'score': 1, 'category': 'mobile'},
+      ],
+    },
+    {
+      'id': 'q3',
+      'question': 'What motivates you the most?',
+      'category': 'motivation',
+      'options': [
+        {'text': 'Creating visually appealing designs', 'score': 1, 'category': 'uiux'},
+        {'text': 'Solving real-world data problems', 'score': 1, 'category': 'data'},
+        {'text': 'Developing applications from scratch', 'score': 1, 'category': 'programming'},
+        {'text': 'Making apps accessible across devices', 'score': 1, 'category': 'mobile'},
+        {'text': 'Building smart, AI-driven systems', 'score': 1, 'category': 'ai'},
+      ],
+    },
+    {
+      'id': 'q4',
+      'question': 'Which soft skill best describes you?',
+      'category': 'personality',
+      'options': [
+        {'text': 'Attention to detail', 'score': 1, 'category': 'uiux'},
+        {'text': 'Analytical thinking', 'score': 1, 'category': 'data'},
+        {'text': 'Empathy with users', 'score': 1, 'category': 'uiux'},
+        {'text': 'Creativity', 'score': 1, 'category': 'design'},
+        {'text': 'Persistence in debugging', 'score': 1, 'category': 'programming'},
+      ],
+    },
+    {
+      'id': 'q5',
+      'question': 'Which task sounds most exciting to you?',
+      'category': 'preferences',
+      'options': [
+        {'text': 'Designing wireframes and prototypes', 'score': 1, 'category': 'uiux'},
+        {'text': 'Training machine learning models', 'score': 1, 'category': 'ai'},
+        {'text': 'Optimizing backend performance', 'score': 1, 'category': 'backend'},
+        {'text': 'Building dashboards with charts', 'score': 1, 'category': 'data'},
+        {'text': 'Developing Android/iOS apps', 'score': 1, 'category': 'mobile'},
+      ],
+    },
+    {
+      'id': 'q6',
+      'question': 'How comfortable are you with math and statistics?',
+      'category': 'skills',
+      'options': [
+        {'text': 'Very comfortable', 'score': 1, 'category': 'data'},
+        {'text': 'Somewhat comfortable', 'score': 0.5, 'category': 'data'},
+        {'text': 'Not comfortable', 'score': 0, 'category': 'data'},
+      ],
+    },
+    {
+      'id': 'q7',
+      'question': 'Do you enjoy working on team-based projects?',
+      'category': 'personality',
+      'options': [
+        {'text': 'Yes', 'score': 1, 'category': 'teamwork'},
+        {'text': 'Sometimes', 'score': 0.5, 'category': 'teamwork'},
+        {'text': 'No', 'score': 0, 'category': 'teamwork'},
+      ],
+    },
+    {
+      'id': 'q8',
+      'question': 'Which environment do you prefer working in?',
+      'category': 'preferences',
+      'options': [
+        {'text': 'Design tools', 'score': 1, 'category': 'uiux'},
+        {'text': 'Terminal and code editor', 'score': 1, 'category': 'programming'},
+        {'text': 'Spreadsheet and data tools', 'score': 1, 'category': 'data'},
+        {'text': 'App builders like Flutter', 'score': 1, 'category': 'mobile'},
+      ],
+    },
+    {
+      'id': 'q9',
+      'question': 'Which of these would you rather do in your free time?',
+      'category': 'interests',
+      'options': [
+        {'text': 'Design logos', 'score': 1, 'category': 'design'},
+        {'text': 'Build a chatbot', 'score': 1, 'category': 'ai'},
+        {'text': 'Make a mobile app', 'score': 1, 'category': 'mobile'},
+        {'text': 'Visualize data', 'score': 1, 'category': 'data'},
+      ],
+    },
+    {
+      'id': 'q10',
+      'question': 'Are you more interested in front-end or back-end development?',
+      'category': 'preferences',
+      'options': [
+        {'text': 'Front-end', 'score': 1, 'category': 'frontend'},
+        {'text': 'Back-end', 'score': 1, 'category': 'backend'},
+        {'text': 'Both', 'score': 1, 'category': 'fullstack'},
+        {'text': 'Neither', 'score': 0, 'category': 'other'},
+      ],
+    },
+  ];
 
-  final Map<String, List<String>> dropdownOptions = {
-    'interest': [
-      'Technology and Programming',
-      'Business and Finance',
-      'Arts and Design',
-      'Healthcare',
-      'Education',
-      'Engineering',
-      'Other'
-    ],
-    'experience': [
-      'No experience',
-      'Beginner (less than 1 year)',
-      'Intermediate (1-3 years)',
-      'Advanced (3+ years)',
-      'Professional'
-    ],
-    'commitment': [
-      'Less than 5 hours per week',
-      '5-10 hours per week',
-      '10-20 hours per week',
-      '20-30 hours per week',
-      'More than 30 hours per week'
-    ],
-    'work_preference': [
-      'Office work',
-      'Remote work',
-      'Hybrid (both office and remote)',
-      'Field work',
-      'Flexible (any of the above)'
-    ],
-  };
+  final Map<String, Map<String, dynamic>?> answers = {};
 
-  void updateAnswer(String key, String? value) {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize answers map with null values for each question
+    for (var question in questions) {
+      answers[question['id']] = null;
+    }
+  }
+
+  void updateAnswer(String key, Map<String, dynamic>? value) {
     setState(() {
       answers[key] = value;
     });
@@ -202,7 +278,7 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
     return answers.values.every((answer) => answer != null);
   }
 
-  void _submitAssessment() {
+  Future<void> _submitAssessment() async {
     if (!allQuestionsAnswered) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -212,7 +288,90 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
       );
       return;
     }
-    Navigator.pushNamed(context, '/assessment/results');
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Authentication required. Please login again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Prepare answers in the required format
+      final answersList = answers.entries.map((entry) {
+        final question = questions.firstWhere((q) => q['id'] == entry.key);
+        final selectedOption = entry.value;
+        return {
+          'question': question['question'],
+          'answer': selectedOption?['text'],
+          'category': selectedOption?['category'] ?? question['category'],
+          'score': selectedOption?['score'] ?? 1,
+        };
+      }).toList();
+      final response = await http.post(
+        Uri.parse('https://skillsync-backend-production.up.railway.app/api/assessment/submit'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'answers': answersList,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Assessment submitted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Request career suggestion after submission
+        final suggestionResponse = await http.get(
+          Uri.parse('https://skillsync-backend-production.up.railway.app/api/assessment/suggest'),
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        if (suggestionResponse.statusCode == 200) {
+          final suggestion = jsonDecode(suggestionResponse.body);
+          Navigator.pushNamed(
+            context,
+            '/assessment/results',
+            arguments: suggestion,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to get suggestion: ${suggestionResponse.body}'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit assessment: ${response.statusCode} - ${response.body}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error submitting assessment: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -282,33 +441,18 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     children: [
-                      _buildDropdownQuestion(
-                        key: 'interest',
-                        question: 'What field interests you the most?',
-                        iconUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F9b8277c3-b24f-4c61-9af5-42777d2bdcb7.png',
-                        hint: 'Select your interest area',
-                      ),
-                      const SizedBox(height: 20),
-                      _buildDropdownQuestion(
-                        key: 'experience',
-                        question: 'What is your experience level?',
-                        iconUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2F70c5fac5-8f52-4c3e-900a-8c2e603aa33e.png',
-                        hint: 'Select your experience level',
-                      ),
-                      const SizedBox(height: 20),
-                      _buildDropdownQuestion(
-                        key: 'commitment',
-                        question: 'How much time can you commit weekly?',
-                        iconUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2Fafc4aebb-d00e-48a7-b3ab-568b696e2478.png',
-                        hint: 'Select your weekly commitment',
-                      ),
-                      const SizedBox(height: 20),
-                      _buildDropdownQuestion(
-                        key: 'work_preference',
-                        question: 'What is your preferred work environment?',
-                        iconUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0RtgVWh8wVg1fysBxIg4%2Fafc4aebb-d00e-48a7-b3ab-568b696e2478.png',
-                        hint: 'Select work preference',
-                      ),
+                      ...questions.map((question) => Column(
+                        children: [
+                          _buildDropdownQuestion(
+                            key: question['id'],
+                            question: question['question'],
+                            category: question['category'],
+                            options: question['options'],
+                            hint: 'Select your answer',
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      )),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -349,7 +493,8 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
   Widget _buildDropdownQuestion({
     required String key,
     required String question,
-    required String iconUrl,
+    required String category,
+    required List<Map<String, dynamic>> options,
     required String hint,
   }) {
     return Container(
@@ -390,13 +535,13 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: DropdownButtonFormField<String>(
+            child: DropdownButtonFormField<Map<String, dynamic>>(
               value: answers[key],
               onChanged: (value) => updateAnswer(key, value),
-              items: dropdownOptions[key]!
+              items: options
                   .map((option) => DropdownMenuItem(
                 value: option,
-                child: Text(option),
+                child: Text(option['text']),
               ))
                   .toList(),
               decoration: InputDecoration(
@@ -423,17 +568,75 @@ class AssessmentResultsScreen extends StatefulWidget {
 }
 
 class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
-  bool isGraphicDesignerExpanded = false;
-  bool isFrontendDeveloperExpanded = false;
+  List<dynamic> careerSuggestions = [];
+  bool isLoading = true;
+  String errorMessage = '';
+  Map<String, bool> expandedStates = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAssessmentResults();
+  }
+
+  Future<void> _fetchAssessmentResults() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Authentication required. Please login again.';
+        });
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('https://skillsync-backend-production.up.railway.app/api/assessment/results'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          careerSuggestions = data['careerSuggestions'] ?? [];
+          // Initialize expanded states
+          for (var career in careerSuggestions) {
+            expandedStates[career['careerName']] = false;
+          }
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Failed to load results: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Error fetching results: $e';
+      });
+    }
+  }
+
+  void _toggleExpand(String careerName) {
+    setState(() {
+      expandedStates[careerName] = !(expandedStates[careerName] ?? false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFEFEFEF),
+      backgroundColor: const Color(0xFFEFEFEF),
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -453,7 +656,7 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
                 child: Text(
                   'Assessment Results',
                   style: GoogleFonts.roboto(
-                    color: Color(0xFF01497C),
+                    color: const Color(0xFF01497C),
                     fontSize: 24,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.7,
@@ -465,9 +668,7 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
               left: 33,
               top: 73,
               child: GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                },
+                onTap: () => Navigator.pop(context),
                 child: Image.asset(
                   'assets/back_arrow.png',
                   width: 28,
@@ -483,7 +684,7 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
                 textAlign: TextAlign.center,
                 text: TextSpan(
                   style: GoogleFonts.roboto(
-                    color: Color(0xFF01497C),
+                    color: const Color(0xFF01497C),
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     height: 1.3,
@@ -498,434 +699,217 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
             Positioned(
               left: 24,
               top: 183,
-              child: Column(
-                children: [
-                  // Graphic Designer Section
-                  Column(
-                    children: [
-                      Container(
-                        width: 327,
-                        height: 57,
-                        decoration: BoxDecoration(
-                          color: Color(0xFFC0D2DE),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Positioned(
-                              left: 40,
-                              top: 19,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.pushNamed(context, '/grahic_designer_roadmap');
-                                },
-                                child: Text(
-                                  'GRAPHIC DESIGNER',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    height: 0.8,
-                                    fontFamily: 'Roboto',
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              right: 20,
-                              top: 20,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    isGraphicDesignerExpanded = !isGraphicDesignerExpanded;
-                                  });
-                                },
-                                behavior: HitTestBehavior.opaque,
-                                child: Icon(
-                                  isGraphicDesignerExpanded
-                                      ? Icons.keyboard_arrow_up
-                                      : Icons.keyboard_arrow_down,
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (isGraphicDesignerExpanded)
-                        Container(
-                          width: 327,
-                          decoration: BoxDecoration(
-                            color: Color(0xFF01497C),
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(12),
-                              bottomRight: Radius.circular(12),
-                            ),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x19000000),
-                                spreadRadius: 0,
-                                offset: Offset(0, 2),
-                                blurRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 327,
-                                height: 80,
-                                margin: EdgeInsets.only(top: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x16000000),
-                                      spreadRadius: 0,
-                                      offset: Offset(0, 10),
-                                      blurRadius: 10,
-                                    ),
-                                  ],
-                                ),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Positioned(
-                                      left: 15,
-                                      top: 15,
-                                      child: Text(
-                                        'Graphic Design Software',
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          height: 0.9,
-                                          fontFamily: 'Roboto',
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      left: 15,
-                                      top: 45,
-                                      child: Container(
-                                        width: 293,
-                                        height: 20,
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: LinearProgressIndicator(
-                                                value: 0.2,
-                                                backgroundColor: Color(0xFFD9D9D9),
-                                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF024372)),
-                                                minHeight: 10,
-                                                borderRadius: BorderRadius.circular(5),
-                                              ),
-                                            ),
-                                            SizedBox(width: 10),
-                                            Text(
-                                              '20%',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 327,
-                                height: 69,
-                                margin: EdgeInsets.only(top: 8, bottom: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x19000000),
-                                      spreadRadius: 0,
-                                      offset: Offset(0, 2),
-                                      blurRadius: 5,
-                                    ),
-                                  ],
-                                ),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Positioned(
-                                      left: 15,
-                                      top: 15,
-                                      child: Text(
-                                        'Design Principles',
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          height: 0.9,
-                                          fontFamily: 'Roboto',
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      left: 15,
-                                      top: 45,
-                                      child: Container(
-                                        width: 293,
-                                        height: 20,
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: LinearProgressIndicator(
-                                                value: 0.57,
-                                                backgroundColor: Color(0xFFD9D9D9),
-                                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF024372)),
-                                                minHeight: 10,
-                                                borderRadius: BorderRadius.circular(5),
-                                              ),
-                                            ),
-                                            SizedBox(width: 10),
-                                            Text(
-                                              '57%',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+              right: 24,
+              bottom: 20,
+              child: _buildResultsContent(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultsContent() {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF01497C),
+        ),
+      );
+    }
+
+    if (errorMessage.isNotEmpty) {
+      return Center(
+        child: Text(
+          errorMessage,
+          style: const TextStyle(
+            color: Colors.red,
+            fontSize: 18,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    if (careerSuggestions.isEmpty) {
+      return const Center(
+        child: Text(
+          'No career suggestions available',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          ...careerSuggestions.map((career) => _buildCareerSuggestionCard(career)),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCareerSuggestionCard(Map<String, dynamic> career) {
+    final careerName = career['careerName'] ?? 'Unknown Career';
+    final skills = List<Map<String, dynamic>>.from(career['skills'] ?? []);
+    final isExpanded = expandedStates[careerName] ?? false;
+
+    return Column(
+      children: [
+        Container(
+          width: 327,
+          height: 57,
+          decoration: BoxDecoration(
+            color: const Color(0xFFC0D2DE),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 40,
+                top: 19,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/career_roadmap',
+                      arguments: {
+                        'careerName': careerName,
+                        'skills': skills,
+                      },
+                    );
+                  },
+                  child: Text(
+                    careerName.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      height: 0.8,
+                      fontFamily: 'Roboto',
+                    ),
                   ),
-                  SizedBox(height: 20),
-                  Column(
-                    children: [
-                      // Frontend Developer Section
-                      Container(
-                        width: 327,
-                        height: 57,
-                        decoration: BoxDecoration(
-                          color: Color(0xFFC0D2DE),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Positioned(
-                              left: 40,
-                              top: 19,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.pushNamed(context, '/frontend_roadmap');
-                                },
-                                child: Text(
-                                  'FRONTEND DEVELOPER',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    height: 0.8,
-                                    fontFamily: 'Roboto',
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              right: 20,
-                              top: 20,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    isFrontendDeveloperExpanded = !isFrontendDeveloperExpanded;
-                                  });
-                                },
-                                behavior: HitTestBehavior.opaque,
-                                child: Icon(
-                                  isFrontendDeveloperExpanded
-                                      ? Icons.keyboard_arrow_up
-                                      : Icons.keyboard_arrow_down,
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (isFrontendDeveloperExpanded)
-                        Container(
-                          width: 327,
-                          decoration: BoxDecoration(
-                            color: Color(0xFF01497C),
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(12),
-                              bottomRight: Radius.circular(12),
-                            ),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x19000000),
-                                spreadRadius: 0,
-                                offset: Offset(0, 2),
-                                blurRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 327,
-                                height: 80,
-                                margin: EdgeInsets.only(top: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x16000000),
-                                      spreadRadius: 0,
-                                      offset: Offset(0, 10),
-                                      blurRadius: 10,
-                                    ),
-                                  ],
-                                ),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Positioned(
-                                      left: 15,
-                                      top: 15,
-                                      child: Text(
-                                        'Programming Fundamentals',
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          height: 0.9,
-                                          fontFamily: 'Roboto',
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      left: 15,
-                                      top: 45,
-                                      child: Container(
-                                        width: 293,
-                                        height: 20,
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: LinearProgressIndicator(
-                                                value: 0.86,
-                                                backgroundColor: Color(0xFFD9D9D9),
-                                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF024372)),
-                                                minHeight: 10,
-                                                borderRadius: BorderRadius.circular(5),
-                                              ),
-                                            ),
-                                            SizedBox(width: 10),
-                                            Text(
-                                              '86%',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 327,
-                                height: 69,
-                                margin: EdgeInsets.only(top: 8, bottom: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x19000000),
-                                      spreadRadius: 0,
-                                      offset: Offset(0, 2),
-                                      blurRadius: 5,
-                                    ),
-                                  ],
-                                ),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Positioned(
-                                      left: 15,
-                                      top: 15,
-                                      child: Text(
-                                        'Data Structures and Algorithms',
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          height: 0.9,
-                                          fontFamily: 'Roboto',
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      left: 15,
-                                      top: 45,
-                                      child: Container(
-                                        width: 293,
-                                        height: 20,
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: LinearProgressIndicator(
-                                                value: 0.62,
-                                                backgroundColor: Color(0xFFD9D9D9),
-                                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF024372)),
-                                                minHeight: 10,
-                                                borderRadius: BorderRadius.circular(5),
-                                              ),
-                                            ),
-                                            SizedBox(width: 10),
-                                            Text(
-                                              '62%',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+                ),
+              ),
+              Positioned(
+                right: 20,
+                top: 20,
+                child: GestureDetector(
+                  onTap: () => _toggleExpand(careerName),
+                  behavior: HitTestBehavior.opaque,
+                  child: Icon(
+                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (isExpanded)
+          Container(
+            width: 327,
+            decoration: BoxDecoration(
+              color: const Color(0xFF01497C),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x19000000),
+                  spreadRadius: 0,
+                  offset: Offset(0, 2),
+                  blurRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                ...skills.map((skill) => _buildSkillProgress(skill)),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildSkillProgress(Map<String, dynamic> skill) {
+    final skillName = skill['skillName'] ?? 'Unknown Skill';
+    final progress = (skill['proficiency'] ?? 0.0).toDouble();
+    final progressPercentage = (progress * 100).round();
+
+    return Container(
+      width: 327,
+      height: 80,
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x16000000),
+            spreadRadius: 0,
+            offset: Offset(0, 10),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 15,
+            top: 15,
+            child: Text(
+              skillName,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                height: 0.9,
+                fontFamily: 'Roboto',
+              ),
+            ),
+          ),
+          Positioned(
+            left: 15,
+            top: 45,
+            child: Container(
+              width: 293,
+              height: 20,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: const Color(0xFFD9D9D9),
+                      valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF024372)),
+                      minHeight: 10,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '$progressPercentage%',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
