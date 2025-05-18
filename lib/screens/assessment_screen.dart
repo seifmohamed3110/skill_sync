@@ -303,17 +303,31 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
         return;
       }
 
+      // ADDED: Detailed answer logging
+      print('Submitting answers summary:');
+      answers.forEach((key, value) {
+        final question = questions.firstWhere((q) => q['id'] == key);
+        print('Q: ${question['question']}');
+        print('A: ${value?['text']} (Score: ${value?['score']}, Category: ${value?['category']})');
+        print('---');
+      });
+
       // Prepare answers in the required format
       final answersList = answers.entries.map((entry) {
         final question = questions.firstWhere((q) => q['id'] == entry.key);
         final selectedOption = entry.value;
         return {
           'question': question['question'],
-          'answer': selectedOption?['text'],
-          'category': selectedOption?['category'] ?? question['category'],
-          'score': selectedOption?['score'] ?? 1,
+          'category': entry.value?['category'],
+          'answer': entry.value?['text'],
+          'score': entry.value?['score'],
         };
       }).toList();
+
+      // ADDED: Log formatted answers
+      print('Formatted answers for API:');
+      print(jsonEncode({'answers': answersList}));
+
       final response = await http.post(
         Uri.parse('https://skillsync-backend-production.up.railway.app/api/assessment/submit'),
         headers: {
@@ -324,6 +338,9 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
           'answers': answersList,
         }),
       );
+
+      // ADDED: Log API response
+      print('API Response: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -340,6 +357,9 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
             'Authorization': 'Bearer $token',
           },
         );
+
+        // ADDED: Log suggestion response
+        print('Suggestion API Response: ${suggestionResponse.statusCode} - ${suggestionResponse.body}');
 
         if (suggestionResponse.statusCode == 200) {
           final suggestion = jsonDecode(suggestionResponse.body);
@@ -365,6 +385,7 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
         );
       }
     } catch (e) {
+      print('Error in _submitAssessment: $e'); // ADDED: Error logging
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error submitting assessment: $e'),
@@ -598,6 +619,8 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
           'Authorization': 'Bearer $token',
         },
       );
+      print('Results API Response: ${response.statusCode} - ${response.body}');
+
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
