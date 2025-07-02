@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'career_roadmap-screen.dart';
 
 class StudentHomePageScreen extends StatefulWidget {
   const StudentHomePageScreen({super.key});
@@ -13,7 +14,8 @@ class StudentHomePageScreen extends StatefulWidget {
 
 class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
   bool assessmentDone = false;
-  String userName = 'Rohan';
+  String userName = 'User';
+  String selectedCareerPath = '';
   File? profileImage;
   final String _defaultImageUrl =
       'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0RtgVWh8wVg1fysBxIg4%2Fcc50743bb7f21efb92ab09d47d56bdb6f5735a9duser-image.png?alt=media&token=558c6ac5-1b80-4dd6-bb4a-3455eadf5304';
@@ -22,16 +24,25 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
   void initState() {
     super.initState();
     _loadProfileData();
+    _loadCareerPath();
   }
 
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      userName = prefs.getString('profile_name') ?? 'Rohan';
+      userName = prefs.getString('user_name') ?? 'User'; // Get saved user name
       final imagePath = prefs.getString('profile_image_path');
       if (imagePath != null && File(imagePath).existsSync()) {
         profileImage = File(imagePath);
       }
+    });
+  }
+
+  Future<void> _loadCareerPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedCareerPath = prefs.getString('selected_career_path') ?? '';
+      assessmentDone = selectedCareerPath.isNotEmpty;
     });
   }
 
@@ -65,7 +76,7 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Hi $userName,',
+                    'Hi $userName,', // Displays the user's name
                     style: const TextStyle(
                       color: Color(0xFF01497C),
                       fontSize: 30,
@@ -215,26 +226,29 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
                     label: 'TAKE ASSESSMENT',
                     width: 169,
                     onTap: () async {
-                      final result =
-                      await Navigator.pushNamed(context, '/assessment');
+                      final result = await Navigator.pushNamed(context, '/assessment');
                       if (result == true) {
-                        updateAssessmentStatus(true);
+                        await _loadCareerPath();
                       }
                     },
                   ),
                 ],
               ),
               const SizedBox(height: 30),
-              if (assessmentDone) ...[
+              if (assessmentDone && selectedCareerPath.isNotEmpty) ...[
                 GestureDetector(
                   onTap: () async {
-                    final result = await Navigator.pushNamed(
+                    final result = await Navigator.push(
                       context,
-                      '/frontend_roadmap',
-                      arguments: 'front-end developer',
+                      MaterialPageRoute(
+                        builder: (context) => RoadmapProgressScreen(
+                          careerName: selectedCareerPath,
+                          skills: [], // Add your actual skills data here
+                        ),
+                      ),
                     );
                     if (result == true) {
-                      updateAssessmentStatus(true);
+                      await _loadCareerPath();
                     }
                   },
                   child: Container(
@@ -255,7 +269,7 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Progress: 50% - front-end developer track',
+                          'Progress: 50% - $selectedCareerPath track',
                           style: GoogleFonts.cantoraOne(
                             color: Colors.black,
                             fontSize: 20,
@@ -307,17 +321,26 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
                       child: buildBottomIcon(Icons.home, 'Home', isActive: true),
                     ),
                     GestureDetector(
-                      onTap: () async {
-                        final result = await Navigator.pushNamed(
+                      onTap: assessmentDone ? () async {
+                        final result = await Navigator.push(
                           context,
-                          '/frontend_roadmap',
-                          arguments: 'front-end developer',
+                          MaterialPageRoute(
+                            builder: (context) => RoadmapProgressScreen(
+                              careerName: selectedCareerPath,
+                              skills: [], // Add your actual skills data here
+                            ),
+                          ),
                         );
                         if (result == true) {
-                          updateAssessmentStatus(true);
+                          await _loadCareerPath();
                         }
-                      },
-                      child: buildBottomIcon(Icons.map, 'Roadmap', isActive: false),
+                      } : null,
+                      child: buildBottomIcon(
+                        Icons.map,
+                        'Roadmap',
+                        isActive: false,
+                        isDisabled: !assessmentDone,
+                      ),
                     ),
                   ],
                 ),
@@ -388,17 +411,20 @@ class _StudentHomePageScreenState extends State<StudentHomePageScreen> {
   }
 
   Widget buildBottomIcon(IconData icon, String label,
-      {bool isActive = false}) {
+      {bool isActive = false, bool isDisabled = false}) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, color: isActive ? const Color(0xFF01497C) : Colors.grey),
+        Icon(icon,
+            color: isActive ? const Color(0xFF01497C) :
+            isDisabled ? Colors.grey.withOpacity(0.5) : Colors.grey),
         const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
             fontSize: 12,
-            color: isActive ? const Color(0xFF01497C) : Colors.grey,
+            color: isActive ? const Color(0xFF01497C) :
+            isDisabled ? Colors.grey.withOpacity(0.5) : Colors.grey,
           ),
         )
       ],

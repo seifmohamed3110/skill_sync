@@ -15,12 +15,11 @@ class UploadResumeScreen extends StatefulWidget {
 class _UploadResumeScreenState extends State<UploadResumeScreen> {
   PlatformFile? _selectedFile;
   bool _isFileUploaded = false;
-  bool _showSuccessMessage = false;
 
   Future<void> _uploadFile() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token'); // make sure you stored it after login
+      final token = prefs.getString('token');
 
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -39,24 +38,21 @@ class _UploadResumeScreenState extends State<UploadResumeScreen> {
           _selectedFile = result.files.first;
         });
 
-        // Add file extension validation
         final extension = _selectedFile!.extension?.toLowerCase();
         if (extension != 'pdf' && extension != 'docx') {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Only PDF and DOCX files are allowed')),
           );
           setState(() {
-            _selectedFile = null; // Clear the selected file if invalid
+            _selectedFile = null;
           });
           return;
         }
 
-        // Backend API call
         final url = Uri.parse(
           'https://skillsync-backend-production.up.railway.app/api/resume/upload',
         );
 
-        // Determine MIME type based on file extension
         final mimeType = _selectedFile!.extension == 'pdf'
             ? 'application/pdf'
             : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -77,16 +73,8 @@ class _UploadResumeScreenState extends State<UploadResumeScreen> {
         if (response.statusCode == 200) {
           setState(() {
             _isFileUploaded = true;
-            _showSuccessMessage = true;
           });
-
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) {
-              setState(() {
-                _showSuccessMessage = false;
-              });
-            }
-          });
+          _showSuccessDialog();
         } else {
           final respStr = await response.stream.bytesToString();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -101,9 +89,32 @@ class _UploadResumeScreenState extends State<UploadResumeScreen> {
     }
   }
 
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Success', style: TextStyle(color: Colors.green)),
+          content: Text(
+            "Your file '${_selectedFile!.name}' has been uploaded successfully.",
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK', style: TextStyle(color: Colors.blue)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _checkResume() {
     if (_selectedFile != null) {
-      Navigator.pushNamed(context,  '/resume_check');
+      Navigator.pushNamed(context, '/resume_check');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please upload a resume first')),
@@ -278,32 +289,6 @@ class _UploadResumeScreenState extends State<UploadResumeScreen> {
                                 fontSize: 24,
                                 height: 0.7,
                                 fontFamily: 'CantoraOne',
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (_showSuccessMessage && _selectedFile != null)
-                        Center(
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Text(
-                              "Your file '${_selectedFile!.name}'\nhas been uploaded successfully.",
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.green,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),

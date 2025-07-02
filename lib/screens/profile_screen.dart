@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -17,95 +19,143 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final String _defaultImageUrl =
       'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0RtgVWh8wVg1fysBxIg4%2Fcc50743bb7f21efb92ab09d47d56bdb6f5735a9duser-image.png?alt=media&token=298640e5-92c3-49bd-96ba-fb7a48c37b58';
 
-  // Profile data controllers
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
   bool _isEditing = false;
+  bool _isLoading = true;
+  int _retryCount = 0;
+  final int _maxRetries = 3;
 
   @override
   void initState() {
     super.initState();
-    _loadSavedImage();
     _loadProfileData();
   }
 
-  Future<void> _loadSavedImage() async {
+  Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    final imagePath = prefs.getString('profile_image_path');
-
-    if (imagePath != null && File(imagePath).existsSync()) {
-      setState(() {
-        _selectedImage = File(imagePath);
-      });
-    }
+    return prefs.getString('token');
   }
 
   Future<void> _loadProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _nameController.text = prefs.getString('profile_name') ?? 'Bill Johnson';
-      _emailController.text = prefs.getString('profile_email') ?? 'bill@johnson';
-      _phoneController.text = prefs.getString('profile_phone') ?? '+01 234 567 89';
-    });
-  }
+    final token = await _getToken();
+    if (token == null) {
+      await _logout();
+      return;
+    }
 
-  Future<void> _saveImagePath(String path) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('profile_image_path', path);
-  }
+    setState(() => _isLoading = true);
 
-  Future<void> _saveProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('profile_name', _nameController.text);
-    await prefs.setString('profile_email', _emailController.text);
-    await prefs.setString('profile_phone', _phoneController.text);
-  }
-
-  Future<void> _pickImage() async {
     try {
-      final pickedFile = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 500,
-        maxHeight: 500,
-        imageQuality: 90,
-      );
+      // Try to get user data from available endpoints
+      final response = await http.get(
+        Uri.parse('https://skillsync-backend-production.up.railway.app/api/users/career'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
 
-      if (pickedFile != null) {
-        final appDir = await getApplicationDocumentsDirectory();
-        final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final savedImage = await File(pickedFile.path).copy('${appDir.path}/$fileName');
-
-        await _saveImagePath(savedImage.path);
-
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
         setState(() {
-          _selectedImage = savedImage;
+          _nameController.text = responseData['user']['name'] ?? 'User';
+          _emailController.text = responseData['user']['email'] ?? 'user@example.com';
+          _isLoading = false;
         });
+      } else {
+        // Fallback to local storage
+        await _loadLocalProfile();
       }
     } catch (e) {
-      debugPrint('Image picker error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to pick image')),
-      );
+      await _loadLocalProfile();
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  void _toggleEditMode() {
+  Future<void> _loadLocalProfile() async {
+    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _isEditing = !_isEditing;
+      _nameController.text = prefs.getString('local_name') ?? 'User';
+      _emailController.text = prefs.getString('local_email') ?? 'user@example.com';
     });
+  }
 
-    if (!_isEditing) {
-      _saveProfileData();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile saved successfully')),
+  Future<void> _saveProfile() async {
+    final token = await _getToken();
+    if (token == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Try to save to backend
+      final response = await http.put(
+        Uri.parse('https://skillsync-backend-production.up.railway.app/api/users/career'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': _nameController.text,
+          'email': _emailController.text,
+        }),
       );
-      // Return updated data to the previous screen
-      Navigator.pop(context, {
-        'name': _nameController.text,
-        'imagePath': _selectedImage?.path,
-      });
+
+      // Always save locally
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('local_name', _nameController.text);
+      await prefs.setString('local_email', _emailController.text);
+
+      if (response.statusCode == 200) {
+        _showSuccessDialog('Profile updated successfully');
+      } else {
+        _showSuccessDialog('Profile saved locally');
+      }
+    } catch (e) {
+      _showSuccessDialog('Profile saved locally');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isEditing = false;
+        });
+      }
     }
+  }
+
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Success'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -132,53 +182,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
             child: Column(
               children: [
                 _buildHeader(context),
                 const SizedBox(height: 10),
                 _buildProfilePictureSection(),
                 _isEditing ? _buildEditProfileSection() : _buildUserInfoSection(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 20),
-                  child: Column(
-                    children: [
-                      _buildMenuItem(
-                        icon: Icons.edit,
-                        title: _isEditing ? 'Save Profile' : 'Edit Profile',
-                        onTap: _toggleEditMode,
-                        style: menuItemTextStyle,
-                      ),
-                      const SizedBox(height: 15),
-                      _buildMenuItem(
-                        icon: Icons.lock,
-                        title: 'Change Password',
-                        onTap: () {},
-                        style: menuItemTextStyle,
-                      ),
-                      const SizedBox(height: 15),
-                      _buildMenuItem(
-                        icon: Icons.language,
-                        title: 'Language',
-                        onTap: () {},
-                        style: menuItemTextStyle,
-                      ),
-                      const SizedBox(height: 15),
-                      _buildMenuItem(
-                        icon: Icons.logout,
-                        title: 'Log out',
-                        onTap: () {
-                          Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            '/login',
-                                (route) => false,
-                          );
-                        },
-                        style: menuItemTextStyle.copyWith(color: Colors.red),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildMenuItems(),
               ],
             ),
           ),
@@ -291,20 +304,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             keyboardType: TextInputType.emailAddress,
           ),
-          const SizedBox(height: 15),
-          TextFormField(
-            controller: _phoneController,
-            decoration: InputDecoration(
-              labelText: 'Phone Number',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            keyboardType: TextInputType.phone,
-          ),
           const SizedBox(height: 20),
+          if (!_isLoading)
+            ElevatedButton(
+              onPressed: _saveProfile,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0071A0),
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              child: const Text(
+                'Save Changes',
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              ),
+            ),
         ],
       ),
     );
@@ -326,12 +341,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 5),
           Text(
-            '${_emailController.text} | ${_phoneController.text}',
+            _emailController.text,
             style: const TextStyle(
               color: Colors.black87,
               fontSize: 14,
               height: 1.4,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuItems() {
+    const primaryColor = Color(0xFF0071A0);
+    const menuItemTextStyle = TextStyle(
+      color: primaryColor,
+      fontSize: 20,
+      height: 1.4,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 20),
+      child: Column(
+        children: [
+          _buildMenuItem(
+            icon: Icons.edit,
+            title: _isEditing ? 'Cancel Editing' : 'Edit Profile',
+            onTap: _toggleEditMode,
+            style: menuItemTextStyle,
+          ),
+          const SizedBox(height: 15),
+          _buildMenuItem(
+            icon: Icons.lock,
+            title: 'Change Password',
+            onTap: () {},
+            style: menuItemTextStyle,
+          ),
+          const SizedBox(height: 15),
+          _buildMenuItem(
+            icon: Icons.language,
+            title: 'Language',
+            onTap: () {},
+            style: menuItemTextStyle,
+          ),
+          const SizedBox(height: 15),
+          _buildMenuItem(
+            icon: Icons.logout,
+            title: 'Log out',
+            onTap: _logout,
+            style: menuItemTextStyle.copyWith(color: Colors.red),
           ),
         ],
       ),
@@ -376,11 +435,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final pickedFile = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 90,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      _showErrorDialog('Failed to pick image');
+    }
+  }
+
+  void _toggleEditMode() {
+    setState(() {
+      _isEditing = !_isEditing;
+    });
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    await prefs.remove('role');
+    await prefs.remove('local_name');
+    await prefs.remove('local_email');
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login',
+          (route) => false,
+    );
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 }

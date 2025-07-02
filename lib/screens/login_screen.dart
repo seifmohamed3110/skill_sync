@@ -23,24 +23,30 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSavedCredentials();
+    _loadSavedEmail();
   }
 
-  Future<void> _loadSavedCredentials() async {
+  Future<void> _loadSavedEmail() async {
     final prefs = await SharedPreferences.getInstance();
     final savedEmail = prefs.getString('saved_email');
-    final savedPassword = prefs.getString('saved_password');
 
-    if (savedEmail != null && savedPassword != null) {
+    if (savedEmail != null) {
       emailController.text = savedEmail;
-      passwordController.text = savedPassword;
+      setState(() {
+        rememberMe = true;
+      });
     }
   }
 
-  Future<void> _saveCredentials(String email, String password) async {
+  Future<void> _saveEmail(String email) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('saved_email', email);
-    await prefs.setString('saved_password', password);
+  }
+
+  Future<void> _clearSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('saved_email');
+    // Note: We no longer store passwords, so no need to remove them
   }
 
   Future<void> _login() async {
@@ -64,35 +70,29 @@ class _LoginScreenState extends State<LoginScreen> {
           'password': password,
         }),
       );
-
       final responseData = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        // Add null checks for critical fields
         final token = responseData['token']?.toString();
         final user = responseData['user'] as Map<String, dynamic>?;
-        final role = user?['role']?.toString() ?? 'student'; // Default to 'student' if null
+        final role = user?['role']?.toString() ?? 'student';
+        final name = user?['name']?.toString() ?? 'User';
 
         if (token == null) {
           _showErrorDialog('Login failed: No token received');
           setState(() => _isLoading = false);
           return;
         }
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
         await prefs.setString('role', role);
-
-        print('=== DEBUG: SharedPreferences Values ===');
-        print('Token saved: ${prefs.getString('token')}');
-        print('Role saved: ${prefs.getString('role')}');
-        print('======================================');
+        await prefs.setString('user_name', name);
 
         if (rememberMe) {
-          await _saveCredentials(email, password);
-        }else {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.remove('saved_email');
-          await prefs.remove('saved_password');
+          await _saveEmail(email); // Only save the email
+        } else {
+          await _clearSavedCredentials();
         }
 
         if (responseData['user']['role'] == 'mentor') {
@@ -105,11 +105,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (error) {
       print('Login error details: $error');
-      _showErrorDialog('Login failed: ${error.toString()}'); // Show actual error
+      _showErrorDialog('Login failed: ${error.toString()}');
+    } finally {
       setState(() => _isLoading = false);
     }
-
-    setState(() => _isLoading = false);
   }
 
   void _showErrorDialog(String message) {
@@ -179,18 +178,6 @@ class _LoginScreenState extends State<LoginScreen> {
           )
               : null,
         ),
-      ),
-    );
-  }
-
-  Widget _buildSocialIcon(String url) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        url,
-        height: 45,
-        width: 45,
-        fit: BoxFit.cover,
       ),
     );
   }
@@ -283,7 +270,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed:_isLoading ? null : () {
+                  onPressed: _isLoading
+                      ? null
+                      : () {
                     if (_formKey.currentState!.validate()) {
                       _login();
                     }
@@ -307,15 +296,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'OR',
-                  style: TextStyle(
-                    fontSize: 25,
-                    color: Color(0xFF01497C),
-                    fontFamily: 'CantoraOne',
-                  ),
-                ),
-                const SizedBox(height: 20),
                 OutlinedButton(
                   onPressed: () {
                     Navigator.pushNamed(context, '/signup');
@@ -335,27 +315,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontFamily: 'CantoraOne',
                     ),
                   ),
-                ),
-                const SizedBox(height: 40),
-                Text(
-                  'Or Continue with Social Accounts',
-                  style: GoogleFonts.getFont(
-                    'Tenor Sans',
-                    fontSize: 13,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 15,
-                  runSpacing: 10,
-                  children: [
-                    _buildSocialIcon('https://...facebook.png'),
-                    _buildSocialIcon('https://...linkedin.png'),
-                    _buildSocialIcon('https://...apple.png'),
-                    _buildSocialIcon('https://...twitter.png'),
-                  ],
                 ),
                 const SizedBox(height: 40),
               ],

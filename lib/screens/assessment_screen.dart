@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -581,6 +582,8 @@ class _AssessmentQuestionsScreenState extends State<AssessmentQuestionsScreen> {
   }
 }
 
+
+
 class AssessmentResultsScreen extends StatefulWidget {
   const AssessmentResultsScreen({super.key});
 
@@ -620,7 +623,6 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
         },
       );
       print('Results API Response: ${response.statusCode} - ${response.body}');
-
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -691,7 +693,10 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
               left: 33,
               top: 73,
               child: GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  // Go back to student home screen
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
                 child: Image.asset(
                   'assets/back_arrow.png',
                   width: 28,
@@ -731,7 +736,6 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
       ),
     );
   }
-
   Widget _buildResultsContent() {
     if (isLoading) {
       return const Center(
@@ -796,26 +800,14 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
               Positioned(
                 left: 40,
                 top: 19,
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/career_roadmap',
-                      arguments: {
-                        'careerName': careerName,
-                        'skills': skills,
-                      },
-                    );
-                  },
-                  child: Text(
-                    careerName.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      height: 0.8,
-                      fontFamily: 'Roboto',
-                    ),
+                child: Text(
+                  careerName.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    height: 0.8,
+                    fontFamily: 'Roboto',
                   ),
                 ),
               ),
@@ -823,7 +815,9 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
                 right: 20,
                 top: 20,
                 child: GestureDetector(
-                  onTap: () => _toggleExpand(careerName),
+                  onTap: () {
+                    _toggleExpand(careerName);
+                  },
                   behavior: HitTestBehavior.opaque,
                   child: Icon(
                     isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
@@ -856,6 +850,92 @@ class _AssessmentResultsScreenState extends State<AssessmentResultsScreen> {
               children: [
                 ...skills.map((skill) => _buildSkillProgress(skill)),
                 const SizedBox(height: 8),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    ),
+                    onPressed: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      final token = prefs.getString('token');
+
+                      if (token == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('You must be logged in to select a career'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      try {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Row(
+                              children: [
+                                CircularProgressIndicator(color: Colors.white),
+                                SizedBox(width: 10),
+                                Text('Saving career selection...'),
+                              ],
+                            ),
+                            duration: Duration(seconds: 30),
+                          ),
+                        );
+
+                        final response = await http.post(
+                          Uri.parse('https://skillsync-backend-production.up.railway.app/api/user/select-career'),
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer $token',
+                          },
+                          body: jsonEncode({'career': careerName}),
+                        ).timeout(const Duration(seconds: 30));
+
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                        if (response.statusCode == 200) {
+                          Navigator.pushNamed(
+                            context,
+                            '/career_roadmap',
+                            arguments: {
+                              'careerName': careerName,
+                              'skills': skills,
+                            },
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to save career: ${response.statusCode} - ${response.body}'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text(
+                      'SELECT THIS CAREER PATH',
+                      style: TextStyle(
+                        color: Color(0xFF01497C),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
